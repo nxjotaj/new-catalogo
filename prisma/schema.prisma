@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LeadStatus {
+  NOVO
+  EM_ATENDIMENTO
+  CONCLUIDO
+  ARQUIVADO
+}
+
+enum UserRole {
+  ADMIN
+  REPRESENTANTE
+  CLIENTE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Produto {
+  id                 String               @id @default(cuid())
+  nome               String
+  slug               String               @unique
+  codigoInterno      String               @unique
+  categoriaId        String
+  marcaId            String
+  descricaoCurta     String?
+  descricaoCompleta  String?
+  ean                String?
+  ncm                String?
+  caixaMaster        String?
+  imagemPrincipal    String?
+  imagensExtras      String[]             @default([])
+  preco              Decimal?             @db.Decimal(12, 2)
+  estoque            Int?
+  condicaoComercial  String?
+  prazoEntrega       String?
+  fichaTecnica       String?
+  manualPdf          String?
+  observacaoComercial String?
+  margem             Decimal?             @db.Decimal(8, 2)
+  ativo              Boolean              @default(true)
+  destaque           Boolean              @default(false)
+  ordem              Int                  @default(0)
+  observacaoInterna  String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  categoria          Categoria            @relation(fields: [categoriaId], references: [id])
+  marca              Marca                @relation(fields: [marcaId], references: [id])
+  aplicacoes         ProdutoAplicacao[]
+  leads              LeadOrcamento[]
+
+  @@index([ativo, destaque, ordem])
+  @@index([nome])
+  @@index([codigoInterno])
+  @@index([ean])
+  @@index([ncm])
+}
+
+model Categoria {
+  id        String    @id @default(cuid())
+  nome      String
+  slug      String    @unique
+  descricao String?
+  imagem    String?
+  ordem     Int       @default(0)
+  ativo     Boolean   @default(true)
+
+  produtos  Produto[]
+}
+
+model Marca {
+  id       String    @id @default(cuid())
+  nome     String
+  slug     String    @unique
+  logo     String?
+  ativo    Boolean   @default(true)
+
+  produtos Produto[]
+}
+
+model Aplicacao {
+  id        String              @id @default(cuid())
+  nome      String
+  slug      String              @unique
+  tipo      String?
+  ativo     Boolean             @default(true)
+
+  produtos  ProdutoAplicacao[]
+}
+
+model ProdutoAplicacao {
+  produtoId   String
+  aplicacaoId String
+
+  produto     Produto   @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  aplicacao   Aplicacao @relation(fields: [aplicacaoId], references: [id], onDelete: Cascade)
+
+  @@id([produtoId, aplicacaoId])
+}
+
+model LeadOrcamento {
+  id        String     @id @default(cuid())
+  nome      String
+  empresa   String?
+  telefone  String
+  email     String?
+  cidade    String?
+  estado    String?
+  produtoId String?
+  mensagem  String?
+  origem    String?
+  status    LeadStatus @default(NOVO)
+  createdAt DateTime   @default(now())
+
+  produto   Produto?   @relation(fields: [produtoId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  company      String?
+  email        String     @unique
+  passwordHash String
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([role, status])
+}
+
+model ProductFieldPermission {
+  id                      String   @id @default(cuid())
+  fieldKey                String   @unique
+  fieldLabel              String
+  visibleToVisitor        Boolean  @default(false)
+  visibleToClient         Boolean  @default(false)
+  visibleToRepresentative Boolean  @default(false)
+  visibleToAdmin          Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}

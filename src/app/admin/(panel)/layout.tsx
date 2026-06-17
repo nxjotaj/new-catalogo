@@ -63,12 +63,30 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </aside>
       <div className="lg:pl-72">
-        <header className="sticky top-0 z-20 border-b border-white/70 bg-white/80 px-6 py-4 shadow-sm backdrop-blur-xl lg:hidden">
+        <header className="sticky top-0 z-20 space-y-3 border-b border-white/70 bg-white/90 px-4 py-3 shadow-sm backdrop-blur-xl lg:hidden">
           <div className="rounded-2xl bg-[#021126] px-4 py-3">
             <BrandLogo compact />
           </div>
+          <nav className="-mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1">
+            {nav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-4 py-3 text-xs font-black text-[#021126] shadow-sm transition active:scale-[0.98]"
+              >
+                <item.icon className="h-4 w-4 text-[#d9aa2b]" />
+                {item.label}
+              </Link>
+            ))}
+            <form action={logout} className="shrink-0">
+              <button className="inline-flex items-center gap-2 rounded-full bg-[#021126] px-4 py-3 text-xs font-black text-white shadow-sm active:scale-[0.98]">
+                <LogOut className="h-4 w-4 text-[#d9aa2b]" />
+                Sair
+              </button>
+            </form>
+          </nav>
         </header>
-        <main className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f4f6f9_46%,#eef2f7_100%)] px-4 py-6 md:px-7 md:py-8">
+        <main className="min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f4f6f9_46%,#eef2f7_100%)] px-4 py-5 md:px-7 md:py-8">
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>

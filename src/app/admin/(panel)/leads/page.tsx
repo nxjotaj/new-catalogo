@@ -8,7 +8,7 @@ export default async function AdminLeadsPage() {
   return (
     <div>
       <h1 className="mb-6 text-3xl font-black text-[#021126]">Leads e orcamentos</h1>
-      <div className="overflow-hidden rounded-lg border border-[#e2e8f0] bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-white shadow-sm">
         <table className="w-full min-w-[860px] text-left text-sm">
           <thead className="bg-[#f8fafc] text-xs font-black uppercase tracking-wide text-[#536476]">
             <tr>

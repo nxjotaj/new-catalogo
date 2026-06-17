@@ -18,7 +18,8 @@ export default async function AdminPermissionsPage() {
         </p>
       </div>
       <form action={savePermissions} className="overflow-hidden rounded-lg border border-[#e2e8f0] bg-white shadow-sm">
-        <table className="w-full min-w-[760px] text-left text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="bg-[#f8fafc] text-xs font-black uppercase tracking-wide text-[#536476]">
             <tr>
               <th className="px-4 py-3">Campo</th>
@@ -39,7 +40,8 @@ export default async function AdminPermissionsPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
         <div className="border-t border-[#e2e8f0] p-4">
           <button className="rounded-md bg-[#021126] px-5 py-3 text-sm font-black text-white transition hover:bg-[#061b3a]">
             Salvar permissoes

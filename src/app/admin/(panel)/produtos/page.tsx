@@ -21,7 +21,7 @@ export default async function AdminProductsPage() {
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-[#e2e8f0] bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-white shadow-sm">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="bg-[#f8fafc] text-xs font-black uppercase tracking-wide text-[#536476]">
             <tr>

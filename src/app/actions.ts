@@ -8,6 +8,13 @@ import { clearSession, createSession, getSessionUser, requireAdmin } from "@/lib
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { getPermissionMap } from "@/lib/permissions";
 import { makeSlug } from "@/lib/slug";
+import {
+  importProductsFromXlsx,
+} from "@/lib/product-import";
+import {
+  emptyProductImportResult,
+  type ProductImportResult,
+} from "@/lib/product-import-types";
 import { saveUploadedImage, saveUploadedImages } from "@/lib/upload";
 
 function text(formData: FormData, key: string) {
@@ -120,6 +127,7 @@ export async function saveProduct(formData: FormData) {
     marcaId,
     descricaoCurta: text(formData, "descricaoCurta"),
     descricaoCompleta: text(formData, "descricaoCompleta"),
+    ca: text(formData, "ca"),
     ean: text(formData, "ean"),
     ncm: text(formData, "ncm"),
     caixaMaster: text(formData, "caixaMaster"),
@@ -163,6 +171,31 @@ export async function deleteProduct(formData: FormData) {
   await prisma.produto.delete({ where: { id } });
   revalidatePath("/catalogo");
   revalidatePath("/admin/produtos");
+}
+
+export async function importProducts(
+  _previousState: ProductImportResult,
+  formData: FormData,
+): Promise<ProductImportResult> {
+  await requireAdmin();
+  const file = formData.get("file");
+
+  if (!(file instanceof File) || file.size === 0) {
+    return { ...emptyProductImportResult, message: "Selecione uma planilha XLSX." };
+  }
+
+  try {
+    const result = await importProductsFromXlsx(file);
+    revalidatePath("/catalogo");
+    revalidatePath("/admin");
+    revalidatePath("/admin/produtos");
+    return result;
+  } catch {
+    return {
+      ...emptyProductImportResult,
+      message: "Nao foi possivel ler a planilha. Verifique o arquivo e tente novamente.",
+    };
+  }
 }
 
 export async function saveCategory(formData: FormData) {

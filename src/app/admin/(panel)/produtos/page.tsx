@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { FileSpreadsheet, Pencil, Plus } from "lucide-react";
 import { deleteProduct } from "@/app/actions";
 import { getAdminProducts } from "@/lib/admin-data";
 
@@ -15,10 +15,22 @@ export default async function AdminProductsPage() {
           <p className="text-sm font-black uppercase tracking-[0.2em] text-[#d9aa2b]">Produtos</p>
           <h1 className="mt-2 text-3xl font-black text-[#021126]">Catalogo</h1>
         </div>
-        <Link href="/admin/produtos/novo" className="inline-flex items-center gap-2 rounded-md bg-[#021126] px-4 py-3 text-sm font-black text-white">
-          <Plus className="h-4 w-4" />
-          Novo produto
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/produtos/importar"
+            className="inline-flex items-center gap-2 rounded-full border border-[#d8e0e8] bg-white px-4 py-3 text-sm font-black text-[#021126] transition hover:-translate-y-0.5"
+          >
+            <FileSpreadsheet className="h-4 w-4 text-[#d9aa2b]" />
+            Importar XLSX
+          </Link>
+          <Link
+            href="/admin/produtos/novo"
+            className="inline-flex items-center gap-2 rounded-full bg-[#021126] px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5"
+          >
+            <Plus className="h-4 w-4" />
+            Novo produto
+          </Link>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-white shadow-sm">

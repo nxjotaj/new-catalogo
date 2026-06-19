@@ -11,6 +11,7 @@ type ProductForForm = {
   marcaId?: string;
   descricaoCurta?: string | null;
   descricaoCompleta?: string | null;
+  ca?: string | null;
   ean?: string | null;
   ncm?: string | null;
   caixaMaster?: string | null;
@@ -55,6 +56,7 @@ export function AdminProductForm({
         <Field label="EAN" name="ean" defaultValue={product?.ean ?? ""} />
         <Field label="NCM" name="ncm" defaultValue={product?.ncm ?? ""} />
         <Field label="Caixa master" name="caixaMaster" defaultValue={product?.caixaMaster ?? ""} />
+        <Field label="CA" name="ca" defaultValue={product?.ca ?? ""} />
         <Field label="Preco" name="preco" type="number" defaultValue={product?.preco?.toString() ?? ""} />
         <Field label="Estoque" name="estoque" type="number" defaultValue={product?.estoque ?? ""} />
         <Field label="Prazo de entrega" name="prazoEntrega" defaultValue={product?.prazoEntrega ?? ""} />

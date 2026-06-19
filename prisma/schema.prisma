@@ -34,6 +34,7 @@ model Produto {
   marcaId            String
   descricaoCurta     String?
   descricaoCompleta  String?
+  ca                 String?
   ean                String?
   ncm                String?
   caixaMaster        String?

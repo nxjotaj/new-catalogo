@@ -50,6 +50,14 @@ function actionErrorMessage(error: unknown, fallback: string) {
   }
 
   if (error instanceof Error) {
+    if (
+      error.message.includes("EMAXCONNSESSION") ||
+      error.message.includes("max clients") ||
+      error.message.includes("ECONNREFUSED") ||
+      error.message.includes("P1001")
+    ) {
+      return "O Supabase esta temporariamente indisponivel. Aguarde alguns segundos e tente novamente.";
+    }
     if (error.message.startsWith("FORM:")) {
       return error.message.slice(5);
     }

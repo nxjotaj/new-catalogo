@@ -4,7 +4,7 @@ const validImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image
 const maxImageSize = 5 * 1024 * 1024;
 const bucket = "catalog-media";
 
-function storageConfig() {
+export function getStorageConfig() {
   const url =
     process.env.SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -29,7 +29,7 @@ export async function saveUploadedImage(file: File | null, folder = "products") 
     throw new Error("A imagem excede o limite de 5 MB.");
   }
 
-  const { url, key } = storageConfig();
+  const { url, key } = getStorageConfig();
   const extension = path.extname(file.name).toLowerCase() || `.${file.type.split("/")[1]}`;
   const safeFolder = folder.replace(/[^a-z0-9/_-]/gi, "-").toLowerCase();
   const objectPath = `${safeFolder}/${Date.now()}-${crypto.randomUUID()}${extension}`;

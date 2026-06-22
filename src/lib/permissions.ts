@@ -65,23 +65,32 @@ export const defaultPermissionValues: Record<
 };
 
 export async function ensureDefaultPermissions() {
-  for (const field of PRODUCT_FIELDS) {
-    await prisma.productFieldPermission.upsert({
-      where: { fieldKey: field.key },
-      update: { fieldLabel: field.label },
-      create: {
-        fieldKey: field.key,
-        fieldLabel: field.label,
-        ...defaultPermissionValues[field.key],
-      },
-    });
-  }
+  await prisma.productFieldPermission.createMany({
+    data: PRODUCT_FIELDS.map((field) => ({
+      fieldKey: field.key,
+      fieldLabel: field.label,
+      ...defaultPermissionValues[field.key],
+    })),
+    skipDuplicates: true,
+  });
+}
+
+function defaultVisibility(role: CatalogRole, key: ProductFieldKey) {
+  const defaults = defaultPermissionValues[key];
+  return role === "VISITANTE"
+    ? defaults.visibleToVisitor
+    : role === "CLIENTE"
+      ? defaults.visibleToClient
+      : role === "REPRESENTANTE"
+        ? defaults.visibleToRepresentative
+        : defaults.visibleToAdmin;
 }
 
 export async function getPermissionMap(role: CatalogRole): Promise<PermissionMap> {
-  await ensureDefaultPermissions();
   const rows = await prisma.productFieldPermission.findMany();
-  const map = Object.fromEntries(PRODUCT_FIELDS.map((field) => [field.key, false])) as PermissionMap;
+  const map = Object.fromEntries(
+    PRODUCT_FIELDS.map((field) => [field.key, defaultVisibility(role, field.key)]),
+  ) as PermissionMap;
 
   for (const row of rows) {
     if (!PRODUCT_FIELDS.some((field) => field.key === row.fieldKey)) continue;
@@ -104,8 +113,12 @@ type ProductWithRelations = Produto & {
   aplicacoes: { aplicacao: { nome: string } }[];
 };
 
-export async function getVisibleProductData(product: ProductWithRelations, userRole: CatalogRole) {
-  const permissions = await getPermissionMap(userRole);
+export async function getVisibleProductData(
+  product: ProductWithRelations,
+  userRole: CatalogRole,
+  permissionMap?: PermissionMap,
+) {
+  const permissions = permissionMap ?? (await getPermissionMap(userRole));
   const visible: Record<string, unknown> = {
     id: product.id,
     slug: product.slug,

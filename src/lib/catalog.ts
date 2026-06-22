@@ -61,7 +61,9 @@ export async function getCatalogData(filters: CatalogSearchParams, role: Catalog
   ]);
 
   return {
-    products: await Promise.all(products.map((product) => getVisibleProductData(product, role))),
+    products: await Promise.all(
+      products.map((product) => getVisibleProductData(product, role, permissions)),
+    ),
     categories,
     brands,
     applications,
@@ -70,16 +72,19 @@ export async function getCatalogData(filters: CatalogSearchParams, role: Catalog
 }
 
 export async function getProductBySlug(slug: string, role: CatalogRole) {
-  const product = await prisma.produto.findFirst({
-    where: { slug, ativo: true },
-    include: {
-      categoria: true,
-      marca: true,
-      aplicacoes: { include: { aplicacao: true } },
-    },
-  });
+  const [product, permissions] = await Promise.all([
+    prisma.produto.findFirst({
+      where: { slug, ativo: true },
+      include: {
+        categoria: true,
+        marca: true,
+        aplicacoes: { include: { aplicacao: true } },
+      },
+    }),
+    getPermissionMap(role),
+  ]);
 
-  return product ? getVisibleProductData(product, role) : null;
+  return product ? getVisibleProductData(product, role, permissions) : null;
 }
 
 export async function getProductPageData(slug: string, role: CatalogRole) {
@@ -90,32 +95,40 @@ export async function getProductPageData(slug: string, role: CatalogRole) {
     routeValue = slug;
   }
 
-  const product = await prisma.produto.findFirst({
-    where: {
-      ativo: true,
-      OR: [
-        { slug: routeValue },
-        { codigoInterno: routeValue },
-        { id: routeValue },
-      ],
-    },
-    include: {
-      categoria: true,
-      marca: true,
-      aplicacoes: { include: { aplicacao: true } },
-    },
-  });
+  const [product, permissions] = await Promise.all([
+    prisma.produto.findFirst({
+      where: {
+        ativo: true,
+        OR: [
+          { slug: routeValue },
+          { codigoInterno: routeValue },
+          { id: routeValue },
+        ],
+      },
+      include: {
+        categoria: true,
+        marca: true,
+        aplicacoes: { include: { aplicacao: true } },
+      },
+    }),
+    getPermissionMap(role),
+  ]);
 
   if (!product) return null;
 
-  const related = await getRelatedProducts(product.id, product.categoriaId, role);
+  const related = await getRelatedProducts(product.id, product.categoriaId, role, permissions);
   return {
-    product: await getVisibleProductData(product, role),
+    product: await getVisibleProductData(product, role, permissions),
     related,
   };
 }
 
-export async function getRelatedProducts(productId: string, categoriaId: string, role: CatalogRole) {
+export async function getRelatedProducts(
+  productId: string,
+  categoriaId: string,
+  role: CatalogRole,
+  permissionMap?: Awaited<ReturnType<typeof getPermissionMap>>,
+) {
   const products = await prisma.produto.findMany({
     where: { ativo: true, categoriaId, id: { not: productId } },
     include: { categoria: true, marca: true, aplicacoes: { include: { aplicacao: true } } },
@@ -123,5 +136,8 @@ export async function getRelatedProducts(productId: string, categoriaId: string,
     take: 5,
   });
 
-  return Promise.all(products.map((product) => getVisibleProductData(product, role)));
+  const permissions = permissionMap ?? (await getPermissionMap(role));
+  return Promise.all(
+    products.map((product) => getVisibleProductData(product, role, permissions)),
+  );
 }

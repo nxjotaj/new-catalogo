@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { FileSpreadsheet, Pencil, Plus } from "lucide-react";
+import { FileSpreadsheet, ImageOff, Pencil, Plus } from "lucide-react";
 import { deleteProduct } from "@/app/actions";
 import { getAdminProducts } from "@/lib/admin-data";
 
@@ -37,6 +38,7 @@ export default async function AdminProductsPage() {
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="bg-[#f8fafc] text-xs font-black uppercase tracking-wide text-[#536476]">
             <tr>
+              <th className="px-4 py-3">Foto</th>
               <th className="px-4 py-3">Produto</th>
               <th className="px-4 py-3">Codigo</th>
               <th className="px-4 py-3">Categoria</th>
@@ -48,6 +50,20 @@ export default async function AdminProductsPage() {
           <tbody>
             {products.map((product) => (
               <tr key={product.id} className="border-t border-[#e2e8f0]">
+                <td className="px-4 py-3">
+                  <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-[#e2e8f0] bg-[#f8fafc]">
+                    {product.imagemPrincipal ? (
+                      <Image
+                        src={product.imagemPrincipal}
+                        alt={product.nome}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <ImageOff className="h-5 w-5 text-[#8c9aa8]" />
+                    )}
+                  </div>
+                </td>
                 <td className="px-4 py-3 font-black text-[#021126]">{product.nome}</td>
                 <td className="px-4 py-3">{product.codigoInterno}</td>
                 <td className="px-4 py-3">{product.categoria.nome}</td>

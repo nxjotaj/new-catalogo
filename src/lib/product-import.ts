@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
+import { createUniqueProductSlug } from "@/lib/product-slug";
 import { makeSlug } from "@/lib/slug";
 import {
   emptyProductImportResult,
@@ -179,11 +180,17 @@ export async function importProductsFromXlsx(file: File): Promise<ProductImportR
     }
 
     const existing = await prisma.produto.findUnique({ where: { codigoInterno } });
+    const uniqueSlug = await createUniqueProductSlug({
+      name: nome,
+      internalCode: codigoInterno,
+      requestedSlug: existing?.slug,
+      excludeProductId: existing?.id,
+    });
     const precoText = value("preco");
     const estoqueText = value("estoque");
     const data = {
       nome,
-      slug: existing?.slug || makeSlug(`${nome}-${codigoInterno}`),
+      slug: uniqueSlug,
       codigoInterno,
       categoriaId: category.id,
       marcaId: brand.id,
@@ -217,9 +224,15 @@ export async function importProductsFromXlsx(file: File): Promise<ProductImportR
 
       if (existing) updated += 1;
       else created += 1;
-    } catch {
+    } catch (error) {
       failed += 1;
-      errors.push(`Linha ${rowNumber}: nao foi possivel salvar o produto ${codigoInterno}.`);
+      const reason =
+        error instanceof Error && error.message.includes("Unique constraint")
+          ? "codigo interno ou endereco da pagina ja esta em uso"
+          : "erro ao gravar no banco";
+      errors.push(
+        `Linha ${rowNumber}: nao foi possivel salvar o produto ${codigoInterno} (${reason}).`,
+      );
     }
   }
 

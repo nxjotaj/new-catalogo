@@ -8,6 +8,7 @@ import { clearSession, createSession, getSessionUser, requireAdmin } from "@/lib
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { getPermissionMap } from "@/lib/permissions";
 import { makeSlug } from "@/lib/slug";
+import { createUniqueProductSlug } from "@/lib/product-slug";
 import {
   importProductsFromXlsx,
 } from "@/lib/product-import";
@@ -118,10 +119,16 @@ export async function saveProduct(formData: FormData) {
     .getAll("aplicacoes")
     .filter((value): value is string => typeof value === "string" && value.length > 0);
 
-  const desiredSlug = text(formData, "slug") || nome;
+  const desiredSlug = text(formData, "slug");
+  const uniqueSlug = await createUniqueProductSlug({
+    name: nome,
+    internalCode: codigoInterno,
+    requestedSlug: desiredSlug,
+    excludeProductId: id,
+  });
   const data = {
     nome,
-    slug: makeSlug(desiredSlug),
+    slug: uniqueSlug,
     codigoInterno,
     categoriaId,
     marcaId,

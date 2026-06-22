@@ -15,6 +15,8 @@ type ProductForForm = {
   ean?: string | null;
   ncm?: string | null;
   caixaMaster?: string | null;
+  imagemPrincipal?: string | null;
+  imagensExtras?: string[];
   preco?: unknown;
   estoque?: number | null;
   condicaoComercial?: string | null;
@@ -94,8 +96,17 @@ export function AdminProductForm({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <ImageUploader label="Imagem principal" name="imagemPrincipal" />
-        <ImageUploader label="Imagens extras" name="imagensExtras" multiple />
+        <ImageUploader
+          label="Imagem principal"
+          name="imagemPrincipal"
+          existingUrls={product?.imagemPrincipal ? [product.imagemPrincipal] : []}
+        />
+        <ImageUploader
+          label="Imagens extras"
+          name="imagensExtras"
+          multiple
+          existingUrls={product?.imagensExtras ?? []}
+        />
       </div>
 
       <Textarea label="Observacao interna" name="observacaoInterna" defaultValue={product?.observacaoInterna ?? ""} />

@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { FileSpreadsheet, Upload } from "lucide-react";
+import { useActionState, useState } from "react";
+import { CheckCircle2, FileSpreadsheet, Upload } from "lucide-react";
 import { importProducts } from "@/app/actions";
 import {
   emptyProductImportResult,
@@ -9,6 +9,7 @@ import {
 } from "@/lib/product-import-types";
 
 export function ProductImportForm() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [state, action, pending] = useActionState<ProductImportResult, FormData>(
     importProducts,
     emptyProductImportResult,
@@ -33,17 +34,45 @@ export function ProductImportForm() {
           </div>
         </div>
 
-        <label className="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#b9c7d4] bg-[#f8fafc] px-5 py-10 text-center transition hover:border-[#021126] hover:bg-white">
-          <Upload className="h-8 w-8 text-[#d9aa2b]" />
+        <label
+          className={`mt-6 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-5 py-10 text-center transition hover:border-[#021126] hover:bg-white ${
+            selectedFile
+              ? "border-emerald-400 bg-emerald-50"
+              : "border-[#b9c7d4] bg-[#f8fafc]"
+          }`}
+        >
+          {selectedFile ? (
+            <CheckCircle2 className="h-9 w-9 text-emerald-600" />
+          ) : (
+            <Upload className="h-8 w-8 text-[#d9aa2b]" />
+          )}
           <span className="mt-3 text-sm font-black text-[#021126]">
-            Selecionar planilha de produtos
+            {selectedFile ? "Planilha recebida e pronta" : "Selecionar planilha de produtos"}
           </span>
-          <span className="mt-1 text-xs text-[#6c7b89]">Somente arquivo .xlsx</span>
-          <input name="file" type="file" accept=".xlsx" required className="sr-only" />
+          {selectedFile ? (
+            <>
+              <span className="mt-1 max-w-full break-all text-sm font-bold text-emerald-800">
+                {selectedFile.name}
+              </span>
+              <span className="mt-1 text-xs text-emerald-700">
+                {(selectedFile.size / 1024).toFixed(1)} KB - clique para substituir
+              </span>
+            </>
+          ) : (
+            <span className="mt-1 text-xs text-[#6c7b89]">Somente arquivo .xlsx</span>
+          )}
+          <input
+            name="file"
+            type="file"
+            accept=".xlsx"
+            required
+            className="sr-only"
+            onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+          />
         </label>
 
         <button
-          disabled={pending}
+          disabled={pending || !selectedFile}
           className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-[#021126] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[#061b3a] disabled:cursor-wait disabled:opacity-60"
         >
           <Upload className="h-4 w-4" />

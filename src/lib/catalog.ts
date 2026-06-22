@@ -83,8 +83,22 @@ export async function getProductBySlug(slug: string, role: CatalogRole) {
 }
 
 export async function getProductPageData(slug: string, role: CatalogRole) {
+  let routeValue = slug;
+  try {
+    routeValue = decodeURIComponent(slug);
+  } catch {
+    routeValue = slug;
+  }
+
   const product = await prisma.produto.findFirst({
-    where: { slug, ativo: true },
+    where: {
+      ativo: true,
+      OR: [
+        { slug: routeValue },
+        { codigoInterno: routeValue },
+        { id: routeValue },
+      ],
+    },
     include: {
       categoria: true,
       marca: true,

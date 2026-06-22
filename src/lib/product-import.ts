@@ -207,20 +207,24 @@ export async function importProductsFromXlsx(file: File): Promise<ProductImportR
     };
 
     try {
-      const product = existing
-        ? await prisma.produto.update({ where: { id: existing.id }, data })
-        : await prisma.produto.create({ data });
+      await prisma.$transaction(async (transaction) => {
+        const product = existing
+          ? await transaction.produto.update({ where: { id: existing.id }, data })
+          : await transaction.produto.create({ data });
 
-      await prisma.produtoAplicacao.deleteMany({ where: { produtoId: product.id } });
-      if (applicationIds.length > 0) {
-        await prisma.produtoAplicacao.createMany({
-          data: applicationIds.map((aplicacaoId) => ({
-            produtoId: product.id,
-            aplicacaoId,
-          })),
-          skipDuplicates: true,
+        await transaction.produtoAplicacao.deleteMany({
+          where: { produtoId: product.id },
         });
-      }
+        if (applicationIds.length > 0) {
+          await transaction.produtoAplicacao.createMany({
+            data: applicationIds.map((aplicacaoId) => ({
+              produtoId: product.id,
+              aplicacaoId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      });
 
       if (existing) updated += 1;
       else created += 1;

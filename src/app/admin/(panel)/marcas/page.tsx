@@ -1,15 +1,22 @@
 import { deleteBrand } from "@/app/actions";
+import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminEntityForm } from "@/components/AdminEntityForm";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminBrandsPage() {
+export default async function AdminBrandsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
+  const feedback = await searchParams;
   const brands = await prisma.marca.findMany({ orderBy: { nome: "asc" } });
 
   return (
     <div>
       <h1 className="mb-6 text-3xl font-black text-[#021126]">Marcas</h1>
+      <AdminFeedback success={feedback.success} error={feedback.error} />
       <AdminEntityForm type="marca" />
       <div className="mt-6 space-y-4">
         {brands.map((brand) => (

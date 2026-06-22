@@ -1,15 +1,22 @@
 import { deleteUser } from "@/app/actions";
+import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminUserForm } from "@/components/AdminUserForm";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
+  const feedback = await searchParams;
   const users = await prisma.user.findMany({ orderBy: [{ role: "asc" }, { name: "asc" }] });
 
   return (
     <div>
       <h1 className="mb-6 text-3xl font-black text-[#021126]">Usuarios</h1>
+      <AdminFeedback success={feedback.success} error={feedback.error} />
       <AdminUserForm />
       <div className="mt-6 space-y-4">
         {users.map((user) => (

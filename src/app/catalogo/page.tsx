@@ -87,6 +87,16 @@ export default async function CatalogPage({ searchParams }: PageProps) {
             Solicitacao enviada. A equipe Briland entrara em contato.
           </div>
         )}
+        {firstParam(params.lead) === "erro" && (
+          <div className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">
+            Nao foi possivel enviar a solicitacao. Revise os campos e tente novamente.
+          </div>
+        )}
+        {firstParam(params.lead) === "sem-permissao" && (
+          <div className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">
+            Seu perfil nao possui permissao para solicitar orcamento.
+          </div>
+        )}
 
         <ProductGrid products={products} />
 

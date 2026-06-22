@@ -2,11 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { FileSpreadsheet, ImageOff, Pencil, Plus } from "lucide-react";
 import { deleteProduct } from "@/app/actions";
+import { AdminFeedback } from "@/components/AdminFeedback";
 import { getAdminProducts } from "@/lib/admin-data";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminProductsPage() {
+export default async function AdminProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
+  const feedback = await searchParams;
   const products = await getAdminProducts();
 
   return (
@@ -33,6 +39,8 @@ export default async function AdminProductsPage() {
           </Link>
         </div>
       </div>
+
+      <AdminFeedback success={feedback.success} error={feedback.error} />
 
       <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-white shadow-sm">
         <table className="w-full min-w-[760px] text-left text-sm">

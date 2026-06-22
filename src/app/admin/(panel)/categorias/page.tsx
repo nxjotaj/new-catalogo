@@ -1,15 +1,22 @@
 import { deleteCategory } from "@/app/actions";
+import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminEntityForm } from "@/components/AdminEntityForm";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminCategoriesPage() {
+export default async function AdminCategoriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
+  const feedback = await searchParams;
   const categories = await prisma.categoria.findMany({ orderBy: [{ ordem: "asc" }, { nome: "asc" }] });
 
   return (
     <div>
       <h1 className="mb-6 text-3xl font-black text-[#021126]">Categorias</h1>
+      <AdminFeedback success={feedback.success} error={feedback.error} />
       <AdminEntityForm type="categoria" />
       <div className="mt-6 space-y-4">
         {categories.map((category) => (

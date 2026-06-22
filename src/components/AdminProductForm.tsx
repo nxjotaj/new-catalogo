@@ -1,5 +1,6 @@
 import { saveProduct } from "@/app/actions";
 import { ImageUploader } from "@/components/ImageUploader";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type Option = { id: string; nome: string; ativo: boolean };
 type ProductForForm = {
@@ -122,9 +123,12 @@ export function AdminProductForm({
         </label>
       </div>
 
-      <button className="rounded-md bg-[#021126] px-5 py-3 text-sm font-black text-white transition hover:bg-[#061b3a]">
+      <SubmitButton
+        pendingLabel="Salvando produto..."
+        className="rounded-md bg-[#021126] px-5 py-3 text-sm font-black text-white transition hover:bg-[#061b3a]"
+      >
         Salvar produto
-      </button>
+      </SubmitButton>
     </form>
   );
 }

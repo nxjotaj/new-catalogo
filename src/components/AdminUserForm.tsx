@@ -1,5 +1,6 @@
 import type { UserRole, UserStatus } from "@/generated/prisma/client";
 import { saveUser } from "@/app/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type UserForForm = {
   id?: string;
@@ -42,9 +43,12 @@ export function AdminUserForm({ user }: { user?: UserForForm }) {
           className="h-11 w-full rounded-md border border-[#d8e0e8] px-3 text-sm outline-none focus:border-[#021126]"
         />
       </label>
-      <button className="self-end rounded-md bg-[#021126] px-4 py-3 text-sm font-black text-white transition hover:bg-[#061b3a]">
+      <SubmitButton
+        pendingLabel="Salvando..."
+        className="self-end rounded-md bg-[#021126] px-4 py-3 text-sm font-black text-white transition hover:bg-[#061b3a]"
+      >
         Salvar
-      </button>
+      </SubmitButton>
     </form>
   );
 }

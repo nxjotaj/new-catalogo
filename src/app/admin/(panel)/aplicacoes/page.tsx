@@ -1,15 +1,22 @@
 import { deleteApplication } from "@/app/actions";
+import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminEntityForm } from "@/components/AdminEntityForm";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminApplicationsPage() {
+export default async function AdminApplicationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
+  const feedback = await searchParams;
   const applications = await prisma.aplicacao.findMany({ orderBy: { nome: "asc" } });
 
   return (
     <div>
       <h1 className="mb-6 text-3xl font-black text-[#021126]">Aplicacoes</h1>
+      <AdminFeedback success={feedback.success} error={feedback.error} />
       <AdminEntityForm type="aplicacao" />
       <div className="mt-6 space-y-4">
         {applications.map((application) => (

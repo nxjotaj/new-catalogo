@@ -1,5 +1,6 @@
 import { saveApplication, saveBrand, saveCategory } from "@/app/actions";
 import { ImageUploader } from "@/components/ImageUploader";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type Entity = {
   id: string;
@@ -9,6 +10,8 @@ type Entity = {
   tipo?: string | null;
   ordem?: number;
   ativo: boolean;
+  imagem?: string | null;
+  logo?: string | null;
 };
 
 const actions = {
@@ -38,12 +41,27 @@ export function AdminEntityForm({
       </label>
       {(type === "categoria" || type === "marca") && (
         <div className="md:col-span-2">
-          <ImageUploader label={type === "marca" ? "Logo" : "Imagem"} name={type === "marca" ? "logo" : "imagem"} />
+          <ImageUploader
+            label={type === "marca" ? "Logo" : "Imagem"}
+            name={type === "marca" ? "logo" : "imagem"}
+            existingUrls={
+              type === "marca"
+                ? entity?.logo
+                  ? [entity.logo]
+                  : []
+                : entity?.imagem
+                  ? [entity.imagem]
+                  : []
+            }
+          />
         </div>
       )}
-      <button className="self-end rounded-md bg-[#021126] px-4 py-3 text-sm font-black text-white transition hover:bg-[#061b3a]">
+      <SubmitButton
+        pendingLabel="Salvando..."
+        className="self-end rounded-md bg-[#021126] px-4 py-3 text-sm font-black text-white transition hover:bg-[#061b3a]"
+      >
         Salvar
-      </button>
+      </SubmitButton>
     </form>
   );
 }

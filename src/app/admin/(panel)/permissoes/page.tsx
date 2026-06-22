@@ -1,10 +1,17 @@
 import { savePermissions } from "@/app/actions";
+import { AdminFeedback } from "@/components/AdminFeedback";
+import { SubmitButton } from "@/components/SubmitButton";
 import { ensureDefaultPermissions } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPermissionsPage() {
+export default async function AdminPermissionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
+  const feedback = await searchParams;
   await ensureDefaultPermissions();
   const permissions = await prisma.productFieldPermission.findMany({ orderBy: { fieldLabel: "asc" } });
 
@@ -17,6 +24,7 @@ export default async function AdminPermissionsPage() {
           Estes controles sao aplicados no servidor antes dos produtos serem enviados para a interface.
         </p>
       </div>
+      <AdminFeedback success={feedback.success} error={feedback.error} />
       <form action={savePermissions} className="overflow-hidden rounded-lg border border-[#e2e8f0] bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-sm">
@@ -43,9 +51,12 @@ export default async function AdminPermissionsPage() {
           </table>
         </div>
         <div className="border-t border-[#e2e8f0] p-4">
-          <button className="rounded-md bg-[#021126] px-5 py-3 text-sm font-black text-white transition hover:bg-[#061b3a]">
+          <SubmitButton
+            pendingLabel="Salvando permissoes..."
+            className="rounded-md bg-[#021126] px-5 py-3 text-sm font-black text-white transition hover:bg-[#061b3a]"
+          >
             Salvar permissoes
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </div>

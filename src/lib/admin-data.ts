@@ -1,4 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
+
+export type AdminProductFilters = {
+  status?: string;
+  issue?: string;
+  codigo?: string;
+  categoriaId?: string;
+};
 
 export async function getAdminDashboard() {
   const [products, activeProducts, categories, brands, applications, leads, newLeads] =
@@ -25,8 +33,45 @@ export async function getAdminOptions() {
   return { categories, brands, applications };
 }
 
-export async function getAdminProducts() {
+export function adminProductWhere(filters: AdminProductFilters = {}): Prisma.ProdutoWhereInput {
+  const trimmedCode = filters.codigo?.trim();
+  const missingValue = <T extends string>(field: T) => ({
+    OR: [
+      { [field]: null },
+      { [field]: "" },
+    ] as Prisma.ProdutoWhereInput[],
+  });
+  const issueFilters: Prisma.ProdutoWhereInput[] =
+    filters.issue === "sem-foto"
+      ? [missingValue("imagemPrincipal")]
+      : filters.issue === "incompletos"
+        ? [
+            {
+              OR: [
+                missingValue("imagemPrincipal"),
+                missingValue("descricaoCurta"),
+                missingValue("ean"),
+                missingValue("ncm"),
+                missingValue("caixaMaster"),
+              ],
+            },
+          ]
+        : [];
+
+  return {
+    ...(filters.status === "ativos" ? { ativo: true } : {}),
+    ...(filters.status === "inativos" ? { ativo: false } : {}),
+    ...(trimmedCode
+      ? { codigoInterno: { contains: trimmedCode, mode: "insensitive" } }
+      : {}),
+    ...(filters.categoriaId ? { categoriaId: filters.categoriaId } : {}),
+    ...(issueFilters.length > 0 ? { AND: issueFilters } : {}),
+  };
+}
+
+export async function getAdminProducts(filters: AdminProductFilters = {}) {
   return prisma.produto.findMany({
+    where: adminProductWhere(filters),
     include: {
       categoria: true,
       marca: true,

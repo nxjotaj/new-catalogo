@@ -287,6 +287,34 @@ export async function deleteProduct(formData: FormData) {
   redirect(actionUrl("/admin/produtos", "success", "Produto excluido com sucesso."));
 }
 
+export async function deactivateProduct(formData: FormData) {
+  await requireAdmin();
+  const id = text(formData, "id");
+  if (!id) {
+    redirect(actionUrl("/admin/produtos", "error", "Produto invalido."));
+  }
+
+  try {
+    await prisma.produto.update({
+      where: { id },
+      data: { ativo: false },
+    });
+  } catch (error) {
+    redirect(
+      actionUrl(
+        "/admin/produtos",
+        "error",
+        actionErrorMessage(error, "Nao foi possivel desativar o produto."),
+      ),
+    );
+  }
+
+  revalidatePath("/catalogo");
+  revalidatePath("/admin");
+  revalidatePath("/admin/produtos");
+  redirect(actionUrl("/admin/produtos", "success", "Produto desativado com sucesso."));
+}
+
 export async function importProducts(
   _previousState: ProductImportResult,
   formData: FormData,

@@ -30,6 +30,11 @@ export default async function CatalogPage({ searchParams }: PageProps) {
   const quoteProductId = firstParam(params.orcamento);
   const modalProduct = modalSlug ? products.find((product) => product.slug === modalSlug) ?? null : null;
   const quoteProduct = quoteProductId ? products.find((product) => product.id === quoteProductId) : null;
+  const exportParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value) exportParams.set(key, value);
+  }
+  const pdfHref = `/api/catalogo/pdf${exportParams.size ? `?${exportParams.toString()}` : ""}`;
 
   return (
     <main className="premium-shell min-h-screen">
@@ -44,14 +49,24 @@ export default async function CatalogPage({ searchParams }: PageProps) {
               Consulte produtos cadastrados no banco de dados e filtre por categoria, marca ou aplicacao.
             </p>
           </div>
-          <button
-            disabled={!permissions.downloadCatalogButton}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-[#d8e0e8] px-4 py-3 text-sm font-bold text-[#536476]"
-            title="Estrutura preparada para exportacao em PDF"
-          >
-            <FileDown className="h-4 w-4" />
-            {permissions.downloadCatalogButton ? "Exportar PDF" : "PDF bloqueado"}
-          </button>
+          {permissions.downloadCatalogButton ? (
+            <Link
+              href={pdfHref}
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-[#d8e0e8] px-4 py-3 text-sm font-bold text-[#021126] transition hover:border-[#d9aa2b] hover:bg-[#fff8e2]"
+            >
+              <FileDown className="h-4 w-4 text-[#d9aa2b]" />
+              Exportar PDF
+            </Link>
+          ) : (
+            <button
+              disabled
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-[#d8e0e8] px-4 py-3 text-sm font-bold text-[#536476] opacity-60"
+              title="PDF bloqueado para este perfil"
+            >
+              <FileDown className="h-4 w-4" />
+              PDF bloqueado
+            </button>
+          )}
         </div>
 
         <form className="mb-8 rounded-lg border border-[#e2e8f0] bg-white p-5 shadow-sm">

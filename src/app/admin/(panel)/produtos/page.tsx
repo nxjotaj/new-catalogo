@@ -1,19 +1,40 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FileSpreadsheet, ImageOff, Pencil, Plus } from "lucide-react";
-import { deleteProduct } from "@/app/actions";
+import { Download, FileSpreadsheet, ImageOff, Pencil, Plus, SlidersHorizontal } from "lucide-react";
+import { deactivateProduct } from "@/app/actions";
 import { AdminFeedback } from "@/components/AdminFeedback";
-import { getAdminProducts } from "@/lib/admin-data";
+import { getAdminOptions, getAdminProducts, type AdminProductFilters } from "@/lib/admin-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; error?: string }>;
+  searchParams: Promise<{
+    success?: string;
+    error?: string;
+    status?: string;
+    issue?: string;
+    codigo?: string;
+    categoriaId?: string;
+  }>;
 }) {
   const feedback = await searchParams;
-  const products = await getAdminProducts();
+  const filters: AdminProductFilters = {
+    status: feedback.status,
+    issue: feedback.issue,
+    codigo: feedback.codigo,
+    categoriaId: feedback.categoriaId,
+  };
+  const [{ categories }, products] = await Promise.all([
+    getAdminOptions(),
+    getAdminProducts(filters),
+  ]);
+  const exportParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value) exportParams.set(key, value);
+  }
+  const exportHref = `/api/admin/products/export${exportParams.size ? `?${exportParams.toString()}` : ""}`;
 
   return (
     <div>
@@ -31,6 +52,13 @@ export default async function AdminProductsPage({
             Importar XLSX
           </Link>
           <Link
+            href={exportHref}
+            className="inline-flex items-center gap-2 rounded-full border border-[#d8e0e8] bg-white px-4 py-3 text-sm font-black text-[#021126] transition hover:-translate-y-0.5"
+          >
+            <Download className="h-4 w-4 text-[#d9aa2b]" />
+            Exportar XLSX
+          </Link>
+          <Link
             href="/admin/produtos/novo"
             className="inline-flex items-center gap-2 rounded-full bg-[#021126] px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5"
           >
@@ -41,6 +69,74 @@ export default async function AdminProductsPage({
       </div>
 
       <AdminFeedback success={feedback.success} error={feedback.error} />
+
+      <form className="mb-6 rounded-2xl border border-[#e2e8f0] bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[#021126]">
+          <SlidersHorizontal className="h-4 w-4 text-[#d9aa2b]" />
+          Filtros do cadastro
+        </div>
+        <div className="grid gap-4 lg:grid-cols-5">
+          <label className="block">
+            <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#536476]">Status</span>
+            <select
+              name="status"
+              defaultValue={filters.status || ""}
+              className="h-12 w-full rounded-md border border-[#d8e0e8] bg-white px-3 text-sm font-semibold text-[#12263a] outline-none transition focus:border-[#021126] focus:ring-4 focus:ring-[#021126]/10"
+            >
+              <option value="">Todos</option>
+              <option value="ativos">Ativos</option>
+              <option value="inativos">Inativos</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#536476]">Pendencias</span>
+            <select
+              name="issue"
+              defaultValue={filters.issue || ""}
+              className="h-12 w-full rounded-md border border-[#d8e0e8] bg-white px-3 text-sm font-semibold text-[#12263a] outline-none transition focus:border-[#021126] focus:ring-4 focus:ring-[#021126]/10"
+            >
+              <option value="">Todos</option>
+              <option value="sem-foto">Sem foto</option>
+              <option value="incompletos">Faltando informacao relevante</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#536476]">Codigo</span>
+            <input
+              name="codigo"
+              defaultValue={filters.codigo || ""}
+              placeholder="Buscar codigo"
+              className="h-12 w-full rounded-md border border-[#d8e0e8] bg-white px-3 text-sm font-semibold text-[#12263a] outline-none transition focus:border-[#021126] focus:ring-4 focus:ring-[#021126]/10"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#536476]">Categoria</span>
+            <select
+              name="categoriaId"
+              defaultValue={filters.categoriaId || ""}
+              className="h-12 w-full rounded-md border border-[#d8e0e8] bg-white px-3 text-sm font-semibold text-[#12263a] outline-none transition focus:border-[#021126] focus:ring-4 focus:ring-[#021126]/10"
+            >
+              <option value="">Todas</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-end gap-2">
+            <button className="h-12 rounded-md bg-[#021126] px-5 text-sm font-black text-white transition hover:bg-[#061b3a]">
+              Aplicar
+            </button>
+            <Link
+              href="/admin/produtos"
+              className="inline-flex h-12 items-center rounded-md border border-[#d8e0e8] px-5 text-sm font-bold text-[#536476] transition hover:bg-[#f8fafc]"
+            >
+              Limpar
+            </Link>
+          </div>
+        </div>
+      </form>
 
       <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-white shadow-sm">
         <table className="w-full min-w-[760px] text-left text-sm">
@@ -82,10 +178,13 @@ export default async function AdminProductsPage({
                     <Link href={`/admin/produtos/${product.id}`} className="rounded-md border border-[#d8e0e8] p-2 text-[#021126]">
                       <Pencil className="h-4 w-4" />
                     </Link>
-                    <form action={deleteProduct}>
+                    <form action={deactivateProduct}>
                       <input type="hidden" name="id" value={product.id} />
-                      <button className="rounded-md border border-red-200 px-3 py-2 text-xs font-black text-red-700">
-                        Excluir
+                      <button
+                        disabled={!product.ativo}
+                        className="rounded-md border border-amber-200 px-3 py-2 text-xs font-black text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        Desativar
                       </button>
                     </form>
                   </div>

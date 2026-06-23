@@ -137,6 +137,7 @@ model User {
   role         UserRole
   status       UserStatus @default(ACTIVE)
   notes        String?
+  lastLoginAt  DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 

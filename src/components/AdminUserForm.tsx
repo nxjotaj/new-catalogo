@@ -12,9 +12,14 @@ type UserForForm = {
   notes?: string | null;
 };
 
-export function AdminUserForm({ user }: { user?: UserForForm }) {
+export function AdminUserForm({ user, compact = false }: { user?: UserForForm; compact?: boolean }) {
   return (
-    <form action={saveUser} className="grid gap-4 rounded-lg border border-[#e2e8f0] bg-white p-5 shadow-sm md:grid-cols-6">
+    <form
+      action={saveUser}
+      className={`grid gap-4 md:grid-cols-6 ${
+        compact ? "" : "rounded-lg border border-[#e2e8f0] bg-white p-5 shadow-sm"
+      }`}
+    >
       {user?.id && <input type="hidden" name="id" value={user.id} />}
       <Field label="Nome" name="name" defaultValue={user?.name} required />
       <Field label="Empresa" name="company" defaultValue={user?.company ?? ""} />

@@ -23,12 +23,19 @@ const actions = {
 export function AdminEntityForm({
   type,
   entity,
+  compact = false,
 }: {
   type: keyof typeof actions;
   entity?: Partial<Entity>;
+  compact?: boolean;
 }) {
   return (
-    <form action={actions[type]} className="grid gap-4 rounded-lg border border-[#e2e8f0] bg-white p-5 shadow-sm md:grid-cols-5">
+    <form
+      action={actions[type]}
+      className={`grid gap-4 md:grid-cols-5 ${
+        compact ? "" : "rounded-lg border border-[#e2e8f0] bg-white p-5 shadow-sm"
+      }`}
+    >
       {entity?.id && <input type="hidden" name="id" value={entity.id} />}
       <Field label="Nome" name="nome" defaultValue={entity?.nome} required />
       <Field label="Slug" name="slug" defaultValue={entity?.slug} />

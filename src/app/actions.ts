@@ -98,6 +98,11 @@ export async function login(formData: FormData) {
     redirect(`/login?erro=1&next=${encodeURIComponent(next)}`);
   }
 
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date() },
+  });
+
   await createSession({
     id: user.id,
     name: user.name,
@@ -612,6 +617,59 @@ export async function deleteUser(formData: FormData) {
   }
   revalidatePath("/admin/usuarios");
   redirect(actionUrl("/admin/usuarios", "success", "Usuario excluido com sucesso."));
+}
+
+export async function updateUserStatus(formData: FormData) {
+  const admin = await requireAdmin();
+  const id = text(formData, "id");
+  const status = text(formData, "status") as UserStatus | null;
+  if (!id || !status) redirect(actionUrl("/admin/usuarios", "error", "Usuario invalido."));
+  if (!["ACTIVE", "INACTIVE"].includes(status)) {
+    redirect(actionUrl("/admin/usuarios", "error", "Status invalido."));
+  }
+  if (id === admin.id && status === "INACTIVE") {
+    redirect(actionUrl("/admin/usuarios", "error", "Voce nao pode desativar sua propria conta."));
+  }
+
+  try {
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true, status: true },
+    });
+    if (!target) {
+      throw new Error("FORM:Usuario nao encontrado.");
+    }
+    if (target.role === "ADMIN" && target.status === "ACTIVE" && status === "INACTIVE") {
+      const activeAdmins = await prisma.user.count({
+        where: { role: "ADMIN", status: "ACTIVE" },
+      });
+      if (activeAdmins <= 1) {
+        throw new Error("FORM:Nao e permitido desativar o ultimo administrador ativo.");
+      }
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: { status },
+    });
+  } catch (error) {
+    redirect(
+      actionUrl(
+        "/admin/usuarios",
+        "error",
+        actionErrorMessage(error, "Nao foi possivel alterar o status do usuario."),
+      ),
+    );
+  }
+
+  revalidatePath("/admin/usuarios");
+  redirect(
+    actionUrl(
+      "/admin/usuarios",
+      "success",
+      status === "ACTIVE" ? "Usuario ativado com sucesso." : "Usuario desativado com sucesso.",
+    ),
+  );
 }
 
 export async function savePermissions(formData: FormData) {

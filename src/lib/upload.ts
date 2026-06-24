@@ -23,10 +23,10 @@ export function getStorageConfig() {
 
 function getStorageUploadConfig() {
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY precisa estar configurada para upload.");
+    throw new Error("SUPABASE_URL e chave do Supabase precisam estar configuradas.");
   }
 
   return { url: url.replace(/\/$/, ""), key };

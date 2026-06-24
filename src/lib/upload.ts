@@ -9,10 +9,17 @@ const imageExtensions: Record<string, string> = {
 };
 const maxImageSize = 5 * 1024 * 1024;
 const bucket = "catalog-media";
+const fallbackSupabaseUrl = "https://jdxbxsufqjiinkfvvbda.supabase.co";
+const fallbackAnonKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkeGJ4c3VmcWppaW5rZnZ2YmRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NzM3OTAsImV4cCI6MjA5NzI0OTc5MH0.g40V1rpJ8_0URRcdxVC9EzRFrJzyKK1lFL7yh3HNeHY";
 
 export function getStorageConfig() {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || fallbackSupabaseUrl;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    fallbackAnonKey;
 
   if (!url || !key) {
     throw new Error("SUPABASE_URL e chave do Supabase precisam estar configuradas.");
@@ -22,8 +29,12 @@ export function getStorageConfig() {
 }
 
 function getStorageUploadConfig() {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || fallbackSupabaseUrl;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    fallbackAnonKey;
 
   if (!url || !key) {
     throw new Error("SUPABASE_URL e chave do Supabase precisam estar configuradas.");

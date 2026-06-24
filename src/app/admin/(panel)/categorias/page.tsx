@@ -86,8 +86,8 @@ export default async function AdminCategoriesPage({
             key={category.id}
             className="rounded-[24px] border border-[#e2e8f0] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
           >
-            <div className="grid gap-4 p-4 sm:grid-cols-[112px_1fr]">
-              <div className="relative flex aspect-[4/3] min-h-28 items-center justify-center overflow-hidden rounded-[18px] border border-[#edf1f5] bg-[#f8fafc]">
+            <div className="grid gap-4 p-4 sm:grid-cols-[152px_minmax(0,1fr)]">
+              <div className="relative flex aspect-[4/3] min-h-28 items-center justify-center overflow-hidden rounded-[18px] border border-[#edf1f5] bg-[#f8fafc] sm:aspect-auto sm:h-28 sm:min-h-0 sm:w-full">
                 {category.imagem ? (
                   <Image src={category.imagem} alt={category.nome} fill className="object-cover" />
                 ) : (
@@ -99,7 +99,7 @@ export default async function AdminCategoriesPage({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="truncate text-lg font-black text-[#021126]">{category.nome}</h2>
+                      <h2 className="min-w-0 text-lg font-black leading-snug text-[#021126]">{category.nome}</h2>
                       <StatusBadge active={category.ativo} activeLabel="Ativa" inactiveLabel="Inativa" />
                     </div>
                     <p className="mt-1 truncate text-sm font-bold text-[#536476]">{category.slug}</p>

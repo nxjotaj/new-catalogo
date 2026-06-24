@@ -124,9 +124,9 @@ export default async function AdminCategoriesPage({
                       description="Atualize nome, slug, descricao, imagem, ordem e status da categoria."
                       triggerLabel="Editar"
                       triggerIcon={<Edit3 className="h-4 w-4 text-[#d9aa2b]" />}
-                      triggerClassName="h-auto border border-[#d8e0e8] bg-white px-3 py-2 text-xs text-[#021126] shadow-none hover:border-[#d9aa2b] hover:bg-[#fff8e2]"
+                      triggerClassName="h-9 border border-[#d8e0e8] bg-white px-3 py-2 text-xs text-[#021126] shadow-none hover:border-[#d9aa2b] hover:bg-[#fff8e2]"
                     >
-                        <AdminEntityForm type="categoria" entity={category} compact />
+                      <AdminEntityForm type="categoria" entity={category} compact />
                     </AdminActionModal>
                     <form action={deleteCategory}>
                       <input type="hidden" name="id" value={category.id} />

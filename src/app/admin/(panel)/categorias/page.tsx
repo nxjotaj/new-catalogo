@@ -119,15 +119,15 @@ export default async function AdminCategoriesPage({
                     {category._count.produtos} produtos
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <details className="relative">
-                      <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-xl border border-[#d8e0e8] px-3 py-2 text-xs font-black text-[#021126] transition hover:border-[#d9aa2b] hover:bg-[#fff8e2]">
-                        <Edit3 className="h-4 w-4 text-[#d9aa2b]" />
-                        Editar
-                      </summary>
-                      <div className="mt-3 rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-lg xl:absolute xl:right-0 xl:z-20 xl:w-[760px]">
+                    <AdminActionModal
+                      title={`Editar categoria: ${category.nome}`}
+                      description="Atualize nome, slug, descricao, imagem, ordem e status da categoria."
+                      triggerLabel="Editar"
+                      triggerIcon={<Edit3 className="h-4 w-4 text-[#d9aa2b]" />}
+                      triggerClassName="h-auto border border-[#d8e0e8] bg-white px-3 py-2 text-xs text-[#021126] shadow-none hover:border-[#d9aa2b] hover:bg-[#fff8e2]"
+                    >
                         <AdminEntityForm type="categoria" entity={category} compact />
-                      </div>
-                    </details>
+                    </AdminActionModal>
                     <form action={deleteCategory}>
                       <input type="hidden" name="id" value={category.id} />
                       <button className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-xs font-black text-red-700 transition hover:bg-red-50">

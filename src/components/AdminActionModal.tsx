@@ -2,16 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { Plus, X } from "lucide-react";
+import clsx from "clsx";
 
 export function AdminActionModal({
   title,
   description,
   triggerLabel,
+  triggerIcon,
+  triggerClassName,
   children,
 }: {
   title: string;
   description?: string;
   triggerLabel: string;
+  triggerIcon?: React.ReactNode;
+  triggerClassName?: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -30,9 +35,12 @@ export function AdminActionModal({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#021126] px-4 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#061b3a] active:translate-y-0"
+        className={clsx(
+          "inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#021126] px-4 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#061b3a] active:translate-y-0",
+          triggerClassName,
+        )}
       >
-        <Plus className="h-4 w-4 text-[#d9aa2b]" />
+        {triggerIcon || <Plus className="h-4 w-4 text-[#d9aa2b]" />}
         {triggerLabel}
       </button>
 

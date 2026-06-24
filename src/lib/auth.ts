@@ -14,7 +14,11 @@ export type SessionUser = {
 };
 
 function sessionSecret() {
-  return process.env.SESSION_SECRET || "briland-dev-session-secret";
+  const secret = process.env.SESSION_SECRET;
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET precisa estar configurado em producao.");
+  }
+  return secret || "briland-dev-session-secret";
 }
 
 function sign(payload: string) {

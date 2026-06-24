@@ -17,6 +17,9 @@ const REQUIRED_COLUMNS = [
   "caixaMaster",
 ] as const;
 
+const maxImportSize = 8 * 1024 * 1024;
+const maxImportRows = 5000;
+
 const HEADER_ALIASES: Record<string, string> = {
   "codigo interno": "codigoInterno",
   categoria: "categoria",
@@ -74,6 +77,9 @@ export async function importProductsFromXlsx(file: File): Promise<ProductImportR
   if (!file.name.toLowerCase().endsWith(".xlsx")) {
     return { ...emptyProductImportResult, message: "Envie um arquivo no formato XLSX." };
   }
+  if (file.size > maxImportSize) {
+    return { ...emptyProductImportResult, message: "A planilha excede o limite de 8 MB." };
+  }
 
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await file.arrayBuffer());
@@ -83,6 +89,12 @@ export async function importProductsFromXlsx(file: File): Promise<ProductImportR
     return {
       ...emptyProductImportResult,
       message: "A planilha precisa ter o cabecalho e pelo menos uma linha de produto.",
+    };
+  }
+  if (worksheet.rowCount > maxImportRows + 1) {
+    return {
+      ...emptyProductImportResult,
+      message: `A planilha possui linhas demais. Envie no maximo ${maxImportRows} produtos por importacao.`,
     };
   }
 

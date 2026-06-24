@@ -17,6 +17,13 @@ import {
   type ProductImportResult,
 } from "@/lib/product-import-types";
 import { saveUploadedImage, saveUploadedImages } from "@/lib/upload";
+import { logAudit } from "@/lib/audit";
+import {
+  cleanupExpiredRateLimits,
+  enforceRateLimit,
+  RateLimitError,
+  requireSameOrigin,
+} from "@/lib/security";
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -34,6 +41,10 @@ function actionUrl(path: string, type: "success" | "error", message: string) {
 }
 
 function actionErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof RateLimitError) {
+    return error.message;
+  }
+
   const prismaCode =
     typeof error === "object" && error !== null && "code" in error
       ? String(error.code)
@@ -81,12 +92,27 @@ function actionErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+async function requireSecureAdmin(action: string) {
+  const context = await requireSameOrigin();
+  const admin = await requireAdmin();
+  await enforceRateLimit(`admin:${action}`, `${admin.id}:${context.ipAddress}`, 120, 60);
+  return admin;
+}
+
 export async function login(formData: FormData) {
+  const context = await requireSameOrigin();
   const email = text(formData, "email")?.toLowerCase();
   const password = text(formData, "password");
   const next = text(formData, "next") || "/admin";
 
   if (!email || !password) {
+    redirect(`/login?erro=1&next=${encodeURIComponent(next)}`);
+  }
+
+  try {
+    await enforceRateLimit("login", `${context.ipAddress}:${email}`, 8, 15 * 60);
+    if (Math.random() < 0.02) await cleanupExpiredRateLimits();
+  } catch {
     redirect(`/login?erro=1&next=${encodeURIComponent(next)}`);
   }
 
@@ -111,16 +137,37 @@ export async function login(formData: FormData) {
     role: user.role,
   });
 
+  await logAudit({
+    actor: {
+      id: user.id,
+      name: user.name,
+      company: user.company,
+      email: user.email,
+      role: user.role,
+    },
+    action: "LOGIN",
+    entityType: "User",
+    entityId: user.id,
+  });
+
   if (user.role === "ADMIN") redirect("/admin");
   redirect("/catalogo");
 }
 
 export async function logout() {
+  await requireSameOrigin();
   await clearSession();
   redirect("/catalogo");
 }
 
 export async function createLead(formData: FormData) {
+  const context = await requireSameOrigin();
+  try {
+    await enforceRateLimit("lead", context.ipAddress, 10, 60 * 60);
+  } catch {
+    redirect("/catalogo?lead=erro");
+  }
+
   const user = await getSessionUser();
   const permissions = await getPermissionMap(user?.role || "VISITANTE");
   if (!permissions.quoteButton) {
@@ -135,7 +182,7 @@ export async function createLead(formData: FormData) {
   }
 
   try {
-    await prisma.leadOrcamento.create({
+    const lead = await prisma.leadOrcamento.create({
       data: {
         nome,
         telefone,
@@ -148,6 +195,13 @@ export async function createLead(formData: FormData) {
         origem: text(formData, "origem") || "catalogo",
       },
     });
+    await logAudit({
+      actor: user,
+      action: "CREATE_LEAD",
+      entityType: "LeadOrcamento",
+      entityId: lead.id,
+      metadata: { origem: lead.origem || "catalogo" },
+    });
   } catch {
     redirect("/catalogo?lead=erro");
   }
@@ -157,7 +211,7 @@ export async function createLead(formData: FormData) {
 }
 
 export async function saveProduct(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("saveProduct");
 
   const id = text(formData, "id");
   const errorPath = id ? `/admin/produtos/${id}` : "/admin/produtos/novo";
@@ -234,10 +288,12 @@ export async function saveProduct(formData: FormData) {
       observacaoInterna: text(formData, "observacaoInterna"),
     };
 
+    let productId = id;
     await prisma.$transaction(async (transaction) => {
       const product = id
         ? await transaction.produto.update({ where: { id }, data })
         : await transaction.produto.create({ data });
+      productId = product.id;
 
       await transaction.produtoAplicacao.deleteMany({
         where: { produtoId: product.id },
@@ -252,6 +308,13 @@ export async function saveProduct(formData: FormData) {
           skipDuplicates: true,
         });
       }
+    });
+    await logAudit({
+      actor: admin,
+      action: id ? "UPDATE_PRODUCT" : "CREATE_PRODUCT",
+      entityType: "Produto",
+      entityId: productId,
+      metadata: { codigoInterno, nome },
     });
   } catch (error) {
     redirect(
@@ -270,13 +333,19 @@ export async function saveProduct(formData: FormData) {
 }
 
 export async function deleteProduct(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("deleteProduct");
   const id = text(formData, "id");
   if (!id) {
     redirect(actionUrl("/admin/produtos", "error", "Produto invalido."));
   }
   try {
     await prisma.produto.delete({ where: { id } });
+    await logAudit({
+      actor: admin,
+      action: "DELETE_PRODUCT",
+      entityType: "Produto",
+      entityId: id,
+    });
   } catch (error) {
     redirect(
       actionUrl(
@@ -293,7 +362,7 @@ export async function deleteProduct(formData: FormData) {
 }
 
 export async function deactivateProduct(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("deactivateProduct");
   const id = text(formData, "id");
   if (!id) {
     redirect(actionUrl("/admin/produtos", "error", "Produto invalido."));
@@ -303,6 +372,12 @@ export async function deactivateProduct(formData: FormData) {
     await prisma.produto.update({
       where: { id },
       data: { ativo: false },
+    });
+    await logAudit({
+      actor: admin,
+      action: "DEACTIVATE_PRODUCT",
+      entityType: "Produto",
+      entityId: id,
     });
   } catch (error) {
     redirect(
@@ -324,7 +399,7 @@ export async function importProducts(
   _previousState: ProductImportResult,
   formData: FormData,
 ): Promise<ProductImportResult> {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("importProducts");
   const file = formData.get("file");
 
   if (!(file instanceof File) || file.size === 0) {
@@ -332,21 +407,36 @@ export async function importProducts(
   }
 
   try {
+    await enforceRateLimit("product-import", admin.id, 12, 60 * 60);
     const result = await importProductsFromXlsx(file);
+    await logAudit({
+      actor: admin,
+      action: "IMPORT_PRODUCTS",
+      entityType: "Produto",
+      metadata: {
+        fileName: file.name,
+        created: result.created,
+        updated: result.updated,
+        failed: result.failed,
+      },
+    });
     revalidatePath("/catalogo");
     revalidatePath("/admin");
     revalidatePath("/admin/produtos");
     return result;
-  } catch {
+  } catch (error) {
     return {
       ...emptyProductImportResult,
-      message: "Nao foi possivel ler a planilha. Verifique o arquivo e tente novamente.",
+      message: actionErrorMessage(
+        error,
+        "Nao foi possivel ler a planilha. Verifique o arquivo e tente novamente.",
+      ),
     };
   }
 }
 
 export async function saveCategory(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("saveCategory");
   const id = text(formData, "id");
   const nome = text(formData, "nome");
   if (!nome) {
@@ -368,8 +458,16 @@ export async function saveCategory(formData: FormData) {
       ativo: formData.get("ativo") === "on",
     };
 
-    if (id) await prisma.categoria.update({ where: { id }, data });
-    else await prisma.categoria.create({ data });
+    const category = id
+      ? await prisma.categoria.update({ where: { id }, data })
+      : await prisma.categoria.create({ data });
+    await logAudit({
+      actor: admin,
+      action: id ? "UPDATE_CATEGORY" : "CREATE_CATEGORY",
+      entityType: "Categoria",
+      entityId: category.id,
+      metadata: { nome },
+    });
   } catch (error) {
     redirect(
       actionUrl(
@@ -386,7 +484,7 @@ export async function saveCategory(formData: FormData) {
 }
 
 export async function saveBrand(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("saveBrand");
   const id = text(formData, "id");
   const nome = text(formData, "nome");
   if (!nome) {
@@ -406,8 +504,16 @@ export async function saveBrand(formData: FormData) {
       ativo: formData.get("ativo") === "on",
     };
 
-    if (id) await prisma.marca.update({ where: { id }, data });
-    else await prisma.marca.create({ data });
+    const brand = id
+      ? await prisma.marca.update({ where: { id }, data })
+      : await prisma.marca.create({ data });
+    await logAudit({
+      actor: admin,
+      action: id ? "UPDATE_BRAND" : "CREATE_BRAND",
+      entityType: "Marca",
+      entityId: brand.id,
+      metadata: { nome },
+    });
   } catch (error) {
     redirect(
       actionUrl(
@@ -424,7 +530,7 @@ export async function saveBrand(formData: FormData) {
 }
 
 export async function saveApplication(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("saveApplication");
   const id = text(formData, "id");
   const nome = text(formData, "nome");
   if (!nome) {
@@ -439,8 +545,16 @@ export async function saveApplication(formData: FormData) {
       ativo: formData.get("ativo") === "on",
     };
 
-    if (id) await prisma.aplicacao.update({ where: { id }, data });
-    else await prisma.aplicacao.create({ data });
+    const application = id
+      ? await prisma.aplicacao.update({ where: { id }, data })
+      : await prisma.aplicacao.create({ data });
+    await logAudit({
+      actor: admin,
+      action: id ? "UPDATE_APPLICATION" : "CREATE_APPLICATION",
+      entityType: "Aplicacao",
+      entityId: application.id,
+      metadata: { nome },
+    });
   } catch (error) {
     redirect(
       actionUrl(
@@ -457,11 +571,17 @@ export async function saveApplication(formData: FormData) {
 }
 
 export async function deleteCategory(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("deleteCategory");
   const id = text(formData, "id");
   if (!id) redirect(actionUrl("/admin/categorias", "error", "Categoria invalida."));
   try {
     await prisma.categoria.delete({ where: { id } });
+    await logAudit({
+      actor: admin,
+      action: "DELETE_CATEGORY",
+      entityType: "Categoria",
+      entityId: id,
+    });
   } catch (error) {
     redirect(
       actionUrl(
@@ -477,11 +597,17 @@ export async function deleteCategory(formData: FormData) {
 }
 
 export async function deleteBrand(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("deleteBrand");
   const id = text(formData, "id");
   if (!id) redirect(actionUrl("/admin/marcas", "error", "Marca invalida."));
   try {
     await prisma.marca.delete({ where: { id } });
+    await logAudit({
+      actor: admin,
+      action: "DELETE_BRAND",
+      entityType: "Marca",
+      entityId: id,
+    });
   } catch (error) {
     redirect(
       actionUrl(
@@ -497,11 +623,17 @@ export async function deleteBrand(formData: FormData) {
 }
 
 export async function deleteApplication(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("deleteApplication");
   const id = text(formData, "id");
   if (!id) redirect(actionUrl("/admin/aplicacoes", "error", "Aplicacao invalida."));
   try {
     await prisma.aplicacao.delete({ where: { id } });
+    await logAudit({
+      actor: admin,
+      action: "DELETE_APPLICATION",
+      entityType: "Aplicacao",
+      entityId: id,
+    });
   } catch (error) {
     redirect(
       actionUrl(
@@ -517,7 +649,7 @@ export async function deleteApplication(formData: FormData) {
 }
 
 export async function saveUser(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("saveUser");
 
   const id = text(formData, "id");
   const name = text(formData, "name");
@@ -554,8 +686,15 @@ export async function saveUser(formData: FormData) {
           ...(password ? { passwordHash: hashPassword(password) } : {}),
         },
       });
+      await logAudit({
+        actor: admin,
+        action: "UPDATE_USER",
+        entityType: "User",
+        entityId: id,
+        metadata: { email, role, status },
+      });
     } else {
-      await prisma.user.create({
+      const user = await prisma.user.create({
         data: {
           name,
           company: text(formData, "company"),
@@ -565,6 +704,13 @@ export async function saveUser(formData: FormData) {
           notes: text(formData, "notes"),
           passwordHash: hashPassword(password!),
         },
+      });
+      await logAudit({
+        actor: admin,
+        action: "CREATE_USER",
+        entityType: "User",
+        entityId: user.id,
+        metadata: { email, role, status },
       });
     }
   } catch (error) {
@@ -582,7 +728,7 @@ export async function saveUser(formData: FormData) {
 }
 
 export async function deleteUser(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSecureAdmin("deleteUser");
   const id = text(formData, "id");
   if (!id) redirect(actionUrl("/admin/usuarios", "error", "Usuario invalido."));
   if (id === admin.id) {
@@ -606,6 +752,12 @@ export async function deleteUser(formData: FormData) {
       }
     }
     await prisma.user.delete({ where: { id } });
+    await logAudit({
+      actor: admin,
+      action: "DELETE_USER",
+      entityType: "User",
+      entityId: id,
+    });
   } catch (error) {
     redirect(
       actionUrl(
@@ -620,7 +772,7 @@ export async function deleteUser(formData: FormData) {
 }
 
 export async function updateUserStatus(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSecureAdmin("updateUserStatus");
   const id = text(formData, "id");
   const status = text(formData, "status") as UserStatus | null;
   if (!id || !status) redirect(actionUrl("/admin/usuarios", "error", "Usuario invalido."));
@@ -652,6 +804,13 @@ export async function updateUserStatus(formData: FormData) {
       where: { id },
       data: { status },
     });
+    await logAudit({
+      actor: admin,
+      action: status === "ACTIVE" ? "ACTIVATE_USER" : "DEACTIVATE_USER",
+      entityType: "User",
+      entityId: id,
+      metadata: { status },
+    });
   } catch (error) {
     redirect(
       actionUrl(
@@ -673,7 +832,7 @@ export async function updateUserStatus(formData: FormData) {
 }
 
 export async function savePermissions(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireSecureAdmin("savePermissions");
 
   try {
     const rows = await prisma.productFieldPermission.findMany();
@@ -691,6 +850,11 @@ export async function savePermissions(formData: FormData) {
         }),
       ),
     );
+    await logAudit({
+      actor: admin,
+      action: "UPDATE_PERMISSIONS",
+      entityType: "ProductFieldPermission",
+    });
   } catch (error) {
     redirect(
       actionUrl(

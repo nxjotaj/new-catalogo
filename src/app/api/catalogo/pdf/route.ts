@@ -2,6 +2,7 @@ import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import type { NextRequest } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { getCatalogData } from "@/lib/catalog";
+import { clientIpFromHeaders, enforceRateLimit, RateLimitError } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -33,6 +34,20 @@ function ensureSpace(document: PDFKit.PDFDocument, neededHeight: number) {
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
   const role = user?.role || "VISITANTE";
+  try {
+    await enforceRateLimit(
+      "catalog-pdf",
+      user?.id || clientIpFromHeaders(request.headers),
+      user ? 20 : 6,
+      60 * 60,
+    );
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return new Response(error.message, { status: 429 });
+    }
+    throw error;
+  }
+
   const { products, permissions } = await getCatalogData(
     {
       q: queryValue(request, "q"),

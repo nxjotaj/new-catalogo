@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Database, RefreshCw, ServerOff, WifiOff } from "lucide-react";
 
 type Health = {
+  ok?: boolean;
   database?: { ok: boolean; code: string; message: string };
   storage?: { ok: boolean; code: string; message: string };
 };
@@ -32,6 +33,15 @@ function diagnose(health: Health | null, requestFailed: boolean): Diagnosis {
       message: "O servidor nao respondeu ao diagnostico.",
       detail: "A conexao pode estar instavel ou o servico pode estar reiniciando.",
       icon: ServerOff,
+    };
+  }
+
+  if (health?.ok) {
+    return {
+      title: "Erro interno nesta pagina",
+      message: "A aplicacao respondeu ao diagnostico.",
+      detail: "Tente novamente. Se persistir, informe o codigo abaixo para localizar o erro nos logs.",
+      icon: AlertTriangle,
     };
   }
 

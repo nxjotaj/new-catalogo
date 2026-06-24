@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { adminProductWhere } from "@/lib/admin-data";
 import { prisma } from "@/lib/prisma";
+import { enforceRateLimit, RateLimitError } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,6 +22,14 @@ export async function GET(request: NextRequest) {
   const user = await getSessionUser();
   if (user?.role !== "ADMIN") {
     return new Response("Acesso administrativo necessario.", { status: 403 });
+  }
+  try {
+    await enforceRateLimit("admin-products-export", user.id, 20, 60 * 60);
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return new Response(error.message, { status: 429 });
+    }
+    throw error;
   }
 
   const products = await prisma.produto.findMany({
